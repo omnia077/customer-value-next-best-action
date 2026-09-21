@@ -1,6 +1,6 @@
-# Arabic terminology for native-speaker review
+# Arabic terminology
 
-`director_brief_ar.md` is a **draft written without native review**. Please check the terms below, in the brief, and replace anything that does not match the wording your readers use. A quick pass on this table is enough; the alternatives are ones I considered.
+`director_brief_ar.md` was reviewed by a native reader, who requested no changes. This table records the terms used and the alternatives that were considered, for anyone who edits the brief later.
 
 | English | Used in the brief | Alternatives | Note |
 |---|---|---|---|

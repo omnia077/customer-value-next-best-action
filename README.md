@@ -44,7 +44,7 @@ Single-run results (not repeated across seeds): propensity (Nov, Dec) ROC-AUC 0.
 - **Churn input.** Committed results use a stand-in (`src/churn_proxy.py`, AUC 0.83). Project 1's real scores were run through the adapter on a scratch copy and worked end to end; they are modestly better (AUC 0.77 vs 0.75 on October churn) but about 1.5x too high in mean probability, which would inflate the retention value. Details and the runbook: [docs/project1_integration.md](docs/project1_integration.md).
 - BG/NBD assumes purchase rate and dropout are independent; the simulator ties both to one hidden state, so that is violated by design. Campaign-induced recharges (April, June) are in the CLV fit window.
 - **Billing DWH is reused for KPI definitions only** (ARPU, MOU mirrored in DuckDB). It holds a different population and no recharge events; regenerating it with shared customers was considered and not recommended.
-- **The Arabic brief is an unreviewed draft.** [docs/glossary_ar.md](docs/glossary_ar.md) lists the terms a native reader should check.
+- The Arabic brief was reviewed by a native reader (no changes requested). Terminology reference: [docs/glossary_ar.md](docs/glossary_ar.md).
 - **CI is written but has not run on GitHub yet.** `.github/workflows/ci.yml` regenerates the data, runs the pipeline and the tests.
 
 ## Run it
@@ -65,7 +65,7 @@ Individual stages: `python src/segment.py [--select]`, `clv.py`, `propensity.py`
 
 | Phase | Where |
 |---|---|
-| Business understanding | This README; `docs/director_brief.md` (EN) / `docs/director_brief_ar.md` (AR, draft) |
+| Business understanding | This README; `docs/director_brief.md` (EN) / `docs/director_brief_ar.md` (AR) |
 | Data understanding | `docs/uplift_design.md` (randomization checks); `src/features.py` |
 | Data preparation | `src/features.py`: point-in-time features (a test proves no future data) |
 | Modelling | `src/segment.py`, `clv.py`, `propensity.py`, `uplift.py`, `churn_proxy.py`, `actions.py` |

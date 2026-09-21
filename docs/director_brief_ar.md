@@ -1,5 +1,3 @@
-<!-- DRAFT: not reviewed by a native speaker. See glossary_ar.md for the terms to check. -->
-
 <div dir="rtl" lang="ar">
 
 # ملخص للمدير: لمن نرسل عرض مكافأة الشحن؟
