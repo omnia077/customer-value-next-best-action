@@ -1,0 +1,7 @@
+policy,contacted,expected_incremental_recharges,net_value_sdg
+Contact everyone,13482,1012.0,295712.0
+"Uplift model, EV>0 rule",8519,848.0,317200.0
+"Uplift model, top 4,044 (budget)",4044,493.0,207151.0
+"Propensity, top 4,044 (budget)",4044,123.0,-24271.0
+"Random, 4,044 (budget, expectation)",4044,304.0,88701.0
+"Oracle, top 4,044 (budget)",4044,632.0,294121.0

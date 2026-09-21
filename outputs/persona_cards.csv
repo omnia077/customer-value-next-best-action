@@ -1,0 +1,5 @@
+persona,subscribers,pct_subs,pct_revenue_180d,avg_clv_12m,avg_churn_prob_30d,avg_propensity_500,avg_uplift_pts,pct_contacted,expected_net_value_sdg,pct_grow,pct_protect,pct_win_back,recommended_play
+Core high-value data-led,3325,25.7,54.2,12052.0,0.7,35.9,6.3,35.4,121034.0,31.6,1.7,2.1,grow
+Lapsing data-led,3029,23.4,10.7,3004.0,3.3,16.6,7.7,39.6,118479.0,27.3,2.3,9.9,grow
+Light mixed-use,2219,17.2,4.8,1828.0,2.9,9.7,8.5,35.5,46935.0,31.5,0.6,3.4,grow
+Steady voice-led,4348,33.7,30.4,5600.0,1.7,24.7,5.2,16.4,78288.0,8.9,1.9,5.6,grow

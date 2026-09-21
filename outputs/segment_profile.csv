@@ -1,0 +1,5 @@
+segment_id,n,revenue_sdg,recency_days,recharge_freq_30d,avg_recharge_sdg,sessions_30d,share_data,share_voice,share_sms,pct_subs,pct_revenue,persona
+0,2219,1944000.0,56.55,0.76,197.7,2.88,0.39,0.35,0.26,17.2,4.8,Light mixed-use
+1,3325,22115400.0,11.83,2.51,460.24,11.46,0.64,0.26,0.11,25.7,54.2,Core high-value data-led
+2,4348,12416000.0,33.35,1.29,370.26,5.26,0.3,0.62,0.08,33.7,30.4,Steady voice-led
+3,3029,4348450.0,62.82,0.75,341.47,4.14,0.66,0.25,0.09,23.4,10.7,Lapsing data-led

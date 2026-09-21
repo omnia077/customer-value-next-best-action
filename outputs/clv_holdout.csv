@@ -1,0 +1,5 @@
+model,pred_over_actual,rmse_sdg,spearman,top20_capture_pct
+Last-90-day spend (scaled to 92d),1.086,2412.0,0.657,63.6
+BG/NBD + Gamma-Gamma,1.093,2106.0,0.663,64.8
+LightGBM on RFM (trained on prior period),0.99,2113.0,0.632,65.3
+Oracle,1.0,0.0,1.0,76.4

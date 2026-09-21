@@ -1,0 +1,57 @@
+{
+  "population": 12921,
+  "contacted": 3876,
+  "total_ev_sdg": 364736.0,
+  "action_counts": {
+    "maintain": 9045,
+    "grow": 2963,
+    "win_back": 692,
+    "protect": 221
+  },
+  "ev_by_action_sdg": {
+    "grow": 166265.0,
+    "maintain": 0.0,
+    "protect": 24707.0,
+    "win_back": 173764.0
+  },
+  "share_ev_validated_vs_truth": 0.456,
+  "breakeven_offer_cost_uplift_rule_vs_everyone": 19,
+  "grow_policy": [
+    {
+      "policy": "Contact everyone",
+      "contacted": 13482,
+      "expected_incremental_recharges": 1012.0,
+      "net_value_sdg": 295712.0
+    },
+    {
+      "policy": "Uplift model, EV>0 rule",
+      "contacted": 8519,
+      "expected_incremental_recharges": 848.0,
+      "net_value_sdg": 317200.0
+    },
+    {
+      "policy": "Uplift model, top 4,044 (budget)",
+      "contacted": 4044,
+      "expected_incremental_recharges": 493.0,
+      "net_value_sdg": 207151.0
+    },
+    {
+      "policy": "Propensity, top 4,044 (budget)",
+      "contacted": 4044,
+      "expected_incremental_recharges": 123.0,
+      "net_value_sdg": -24271.0
+    },
+    {
+      "policy": "Random, 4,044 (budget, expectation)",
+      "contacted": 4044,
+      "expected_incremental_recharges": 304.0,
+      "net_value_sdg": 88701.0
+    },
+    {
+      "policy": "Oracle, top 4,044 (budget)",
+      "contacted": 4044,
+      "expected_incremental_recharges": 632.0,
+      "net_value_sdg": 294121.0
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+action,allocated,assumed_rate,median_breakeven_rate,p90_breakeven_rate,robust_share_if_rate_halves,ev_sdg
+protect,221,0.15,0.049,0.072,0.928,24707
+win_back,692,0.06,0.012,0.023,1.0,173764

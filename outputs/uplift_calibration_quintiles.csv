@@ -1,0 +1,6 @@
+q,pred_uplift_pts,true_uplift_pts,observed_uplift_pts
+0,-0.1,1.9,1.7
+1,2.8,5.1,5.7
+2,6.0,7.9,8.3
+3,8.7,9.3,10.4
+4,14.1,13.3,14.1

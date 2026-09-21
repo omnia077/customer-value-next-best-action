@@ -1,0 +1,16 @@
+metric,psi,status
+feature:rech_n_30,0.0007,OK
+feature:rech_n_prev30,0.0,OK
+feature:rech_sum_30,0.0007,OK
+feature:rech_sum_60,0.0015,OK
+feature:rech_avg_60,0.0018,OK
+feature:rech_max_60,0.0004,OK
+feature:n500_60,0.0004,OK
+feature:days_since_recharge,0.0027,OK
+feature:sess_30,0.0013,OK
+feature:sess_prev30,0.0012,OK
+feature:sess_ratio,0.0018,OK
+feature:share_data_60,0.0013,OK
+feature:share_voice_60,0.0009,OK
+feature:tenure_days,0.1043,WATCH
+feature:monthly_arpu_sdg,0.0,OK

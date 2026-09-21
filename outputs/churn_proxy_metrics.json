@@ -1,0 +1,8 @@
+{
+  "roc_auc": 0.825,
+  "pr_auc": 0.1,
+  "top_decile_lift": 4.33,
+  "base_rate": 0.0251,
+  "n_test": 12792,
+  "note": "stand-in for Project 1; simpler features"
+}

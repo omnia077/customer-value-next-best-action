@@ -1,0 +1,214 @@
+{
+  "randomization": {
+    "april": {
+      "n": 12051,
+      "treated_share": 0.499,
+      "control_rate": 0.257,
+      "treated_rate": 0.332,
+      "ate": 0.0753,
+      "ate_se": 0.0083,
+      "max_abs_smd": 0.034
+    },
+    "june": {
+      "n": 13482,
+      "treated_share": 0.498,
+      "control_rate": 0.246,
+      "treated_rate": 0.328,
+      "ate": 0.082,
+      "ate_se": 0.0078,
+      "max_abs_smd": 0.049
+    }
+  },
+  "selected_learner": "S-learner",
+  "learner_cv": [
+    {
+      "learner": "T-learner",
+      "cv_qini_mean": 0.0026,
+      "cv_qini_sd": 0.0034
+    },
+    {
+      "learner": "T-learner (regularized)",
+      "cv_qini_mean": 0.005,
+      "cv_qini_sd": 0.0036
+    },
+    {
+      "learner": "S-learner",
+      "cv_qini_mean": 0.0054,
+      "cv_qini_sd": 0.0032
+    },
+    {
+      "learner": "X-learner",
+      "cv_qini_mean": 0.0033,
+      "cv_qini_sd": 0.0037
+    },
+    {
+      "learner": "Class transformation",
+      "cv_qini_mean": 0.0015,
+      "cv_qini_sd": 0.003
+    }
+  ],
+  "evaluation": [
+    {
+      "policy": "Uplift model",
+      "learner": "S-learner",
+      "spearman_vs_true_uplift": 0.673,
+      "expected_incremental_recharges_top20": 359.0,
+      "observed_uplift_top20_pts": 14.1,
+      "qini_coef": 0.0055,
+      "qini_coef_ci95": [
+        0.0033,
+        0.0078
+      ],
+      "observed_uplift_top20_ci95_pts": [
+        11.9,
+        16.5
+      ]
+    },
+    {
+      "policy": "Propensity model",
+      "learner": "",
+      "spearman_vs_true_uplift": -0.616,
+      "expected_incremental_recharges_top20": 59.0,
+      "observed_uplift_top20_pts": 2.1,
+      "qini_coef": -0.0054,
+      "qini_coef_ci95": [
+        -0.0076,
+        -0.0035
+      ],
+      "observed_uplift_top20_ci95_pts": [
+        -1.2,
+        5.7
+      ]
+    },
+    {
+      "policy": "Oracle (true uplift)",
+      "learner": "",
+      "spearman_vs_true_uplift": 1.0,
+      "expected_incremental_recharges_top20": 489.0,
+      "observed_uplift_top20_pts": 17.6,
+      "qini_coef": 0.0077,
+      "qini_coef_ci95": [
+        0.0054,
+        0.0103
+      ],
+      "observed_uplift_top20_ci95_pts": [
+        15.3,
+        20.0
+      ]
+    },
+    {
+      "policy": "Random",
+      "learner": "",
+      "spearman_vs_true_uplift": 0.0,
+      "expected_incremental_recharges_top20": 202.0,
+      "observed_uplift_top20_pts": 9.4,
+      "qini_coef": 0.0001,
+      "qini_coef_ci95": null,
+      "observed_uplift_top20_ci95_pts": null
+    },
+    {
+      "policy": "Alt learner: T-learner",
+      "learner": "T-learner",
+      "spearman_vs_true_uplift": 0.465,
+      "expected_incremental_recharges_top20": 299.0,
+      "observed_uplift_top20_pts": 10.3,
+      "qini_coef": 0.0042,
+      "qini_coef_ci95": [
+        0.0021,
+        0.0064
+      ],
+      "observed_uplift_top20_ci95_pts": [
+        7.8,
+        13.4
+      ]
+    },
+    {
+      "policy": "Alt learner: T-learner (regularized)",
+      "learner": "T-learner (regularized)",
+      "spearman_vs_true_uplift": 0.576,
+      "expected_incremental_recharges_top20": 340.0,
+      "observed_uplift_top20_pts": 13.4,
+      "qini_coef": 0.005,
+      "qini_coef_ci95": [
+        0.0028,
+        0.0076
+      ],
+      "observed_uplift_top20_ci95_pts": [
+        10.7,
+        16.2
+      ]
+    },
+    {
+      "policy": "Alt learner: X-learner",
+      "learner": "X-learner",
+      "spearman_vs_true_uplift": 0.521,
+      "expected_incremental_recharges_top20": 324.0,
+      "observed_uplift_top20_pts": 12.5,
+      "qini_coef": 0.0047,
+      "qini_coef_ci95": [
+        0.0027,
+        0.0072
+      ],
+      "observed_uplift_top20_ci95_pts": [
+        10.0,
+        15.7
+      ]
+    },
+    {
+      "policy": "Alt learner: Class transformation",
+      "learner": "Class transformation",
+      "spearman_vs_true_uplift": 0.372,
+      "expected_incremental_recharges_top20": 287.0,
+      "observed_uplift_top20_pts": 10.3,
+      "qini_coef": 0.0027,
+      "qini_coef_ci95": [
+        0.0008,
+        0.005
+      ],
+      "observed_uplift_top20_ci95_pts": [
+        7.5,
+        13.5
+      ]
+    }
+  ],
+  "qini_diff_uplift_minus_propensity": {
+    "mean": 0.0111,
+    "ci95": [
+      0.0071,
+      0.0143
+    ]
+  },
+  "quintiles": [
+    {
+      "q": 0,
+      "pred_uplift_pts": -0.1,
+      "true_uplift_pts": 1.9,
+      "observed_uplift_pts": 1.7
+    },
+    {
+      "q": 1,
+      "pred_uplift_pts": 2.8,
+      "true_uplift_pts": 5.1,
+      "observed_uplift_pts": 5.7
+    },
+    {
+      "q": 2,
+      "pred_uplift_pts": 6.0,
+      "true_uplift_pts": 7.9,
+      "observed_uplift_pts": 8.3
+    },
+    {
+      "q": 3,
+      "pred_uplift_pts": 8.7,
+      "true_uplift_pts": 9.3,
+      "observed_uplift_pts": 10.4
+    },
+    {
+      "q": 4,
+      "pred_uplift_pts": 14.1,
+      "true_uplift_pts": 13.3,
+      "observed_uplift_pts": 14.1
+    }
+  ],
+  "true_mean_uplift_june": 0.0751
+}

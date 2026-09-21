@@ -1,0 +1,6 @@
+learner,cv_qini_mean,cv_qini_sd
+T-learner,0.0026,0.0034
+T-learner (regularized),0.005,0.0036
+S-learner,0.0054,0.0032
+X-learner,0.0033,0.0037
+Class transformation,0.0015,0.003
