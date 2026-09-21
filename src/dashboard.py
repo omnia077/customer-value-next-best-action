@@ -21,9 +21,18 @@ def esc(x):
     return html.escape(str(x))
 
 
+def fmt(v):
+    """Whole numbers get thousands separators and no '.0'; other values are shown as they are."""
+    if isinstance(v, (int, np.integer)) and not isinstance(v, bool):
+        return f"{v:,}"
+    if isinstance(v, (float, np.floating)) and np.isfinite(v) and float(v).is_integer():
+        return f"{int(v):,}"
+    return v
+
+
 def table(df, cls=""):
     th = "".join(f"<th>{esc(c)}</th>" for c in df.columns)
-    rows = "".join("<tr>" + "".join(f"<td>{esc(v)}</td>" for v in r) + "</tr>" for r in df.itertuples(index=False))
+    rows = "".join("<tr>" + "".join(f"<td>{esc(fmt(v))}</td>" for v in r) + "</tr>" for r in df.itertuples(index=False))
     return f'<div class="tw"><table class="{cls}"><thead><tr>{th}</tr></thead><tbody>{rows}</tbody></table></div>'
 
 
@@ -128,7 +137,8 @@ main{max-width:1080px;margin:0 auto;padding:12px 16px 40px}section{display:none}
 .chart{width:100%;height:auto;display:block}.lbl{fill:var(--ink);font-size:11.5px}.val{fill:var(--ink2);font-size:11px}.tick{fill:var(--muted);font-size:10.5px}
 .ptitle{fill:var(--ink);font-size:12px;font-weight:600}.grid{stroke:var(--grid);stroke-width:1}.axis{stroke:var(--axis)}
 .bg{fill:var(--dot);opacity:.7}.pt:hover{stroke:var(--ink);stroke-width:1.5}
-.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:8px}
+@media (max-width:520px){.panels{grid-template-columns:1fr}}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin:4px 0 8px}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
 .tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{padding:5px 10px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
 th{color:var(--ink2);font-weight:600}td:first-child,th:first-child{text-align:left}
@@ -158,6 +168,8 @@ def build(cfg_path):
     order = list(prof.sort_values("segment_id").persona)
     col = dict(zip(order, SERIES))
     cards = cards.set_index("persona").loc[order].reset_index()
+    for c in ("avg_clv_12m", "expected_net_value_sdg", "subscribers"):
+        cards[c] = cards[c].round(0).astype(int).map("{:,}".format)
 
     # ---- page 1
     p1 = (f'<div class="card"><h2>Who is in each persona: share of subscribers and of revenue</h2>'
@@ -227,7 +239,25 @@ def build(cfg_path):
     # ---- page 5
     d = drift.copy()
     d["status"] = d.status
-    p5 = ('<div class="card"><h2>How wrong can the assumed rates be? (break-even analysis)</h2>' + table(brk)
+    robust = ""
+    if (o / "multiseed_summary.csv").exists():
+        ms = pd.read_csv(o / "multiseed_summary.csv", index_col=0)
+        mc = json.load(open(o / "multiseed_claims.json"))
+        keep = {"uplift_spearman": "Uplift model: rank correlation with true uplift", "propensity_spearman": "Propensity model: rank correlation",
+                "qini_diff_ci_lo": "Qini gap uplift - propensity, lower 95% bound", "uplift_top20_obs_pts": "Uplift top 20%: observed uplift (pts)",
+                "grow30_uplift_sdg": "Grow net value, uplift top 30% (SDG)", "grow30_propensity_sdg": "Grow net value, propensity top 30% (SDG)",
+                "grow30_random_sdg": "Grow net value, random 30% (SDG)", "clv_rmse_bgnbd": "CLV RMSE: BG/NBD (SDG)", "clv_rmse_lgbm": "CLV RMSE: LightGBM (SDG)",
+                "clv_rmse_last90": "CLV RMSE: last-90-day spend (SDG)", "seg_recovery_ari": "Segment recovery of planted archetypes (ARI)",
+                "breakeven_offer_cost_sdg": "Break-even offer cost, uplift rule vs everyone (SDG)"}
+        t = ms.loc[list(keep)].reset_index().rename(columns={"index": "metric"})
+        t["metric"] = t.metric.map(keep)
+        t = t[["metric", "mean", "sd", "min", "max", "seed_42_reference"]].rename(columns={"seed_42_reference": "seed 42"})
+        n = mc["n_seeds"]
+        robust = (f'<div class="card"><h2>Robustness: {n} independent simulated worlds (seeds 1-{n})</h2>' + table(t.round(4))
+                  + f'<p class="sub">Held in {n}/{n} seeds: propensity rank correlation negative; uplift model beats propensity; Qini gap above zero; '
+                  f'top-20% uplift above the overall effect; uplift top 30% beats random; propensity top 30% loses money; BG/NBD beats last-90-day spend. '
+                  f'BG/NBD beats LightGBM in only {mc["bgnbd_rmse_beats_lgbm"]}/{n} seeds. Seed 42 (main run) is a favourable draw for uplift rank correlation.</p></div>')
+    p5 = (robust + '<div class="card"><h2>How wrong can the assumed rates be? (break-even analysis)</h2>' + table(brk)
           + '<p class="sub">Break-even rate = the rate at which the action has zero expected value. "Robust share" = allocated subscribers still positive if the true rate is half the assumed one. Values still scale with the true rate.</p></div>'
           '<div class="card"><h2>CLV bake-off (holdout Oct-Dec)</h2>' + table(clv) + '</div>'
           '<div class="card"><h2>Propensity (test: Nov and Dec labels)</h2>'
@@ -238,9 +268,10 @@ def build(cfg_path):
 
     pages = [("Segments", p1), ("Value map", p2), ("Action list", p3), ("Uplift vs propensity", p4), ("Model health", p5)]
     nav = "".join(f'<button role="tab" aria-selected="{"true" if i == 0 else "false"}" data-t="{i}">{esc(n)}</button>' for i, (n, _) in enumerate(pages))
-    body = "".join(f'<section class="{"on" if i == 0 else ""}" id="t{i}">{h}</section>' for i, (_, h) in enumerate(pages))
+    body = "".join(f'<section class="{"on" if i == 0 else ""}" id="page{i}">{h}</section>' for i, (_, h) in enumerate(pages))   # id != hash, so #tN never scrolls
     js = ("document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x===b));"
-          "document.querySelectorAll('section').forEach((s,i)=>s.classList.toggle('on',i==b.dataset.t))});")
+          "document.querySelectorAll('section').forEach((s,i)=>s.classList.toggle('on',i==b.dataset.t));history.replaceState(null,'','#t'+b.dataset.t)});"
+          "(function(){var m=/^#t([0-4])$/.exec(location.hash);if(m){var b=document.querySelector('nav button[data-t=\"'+m[1]+'\"]');if(b)b.click();}})();")
     doc = (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
            f'<title>Customer Value Map</title><style>{CSS}</style></head><body><header><h1>Customer Value Map and Next-Best-Action</h1>'
            f'<p class="sub">Prepaid subscribers, as of {cfg["segmentation"]["as_of"]}. All data is simulated; results demonstrate the method, not real-world performance.</p>'
