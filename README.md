@@ -6,15 +6,21 @@ For each prepaid subscriber: **who they are** (persona), **what they are worth**
 
 **All data is simulated** (`data_generation/phase1b_generate_data.py --archetypes --campaign`, 20,000 customers). Results demonstrate the method, not real-world performance.
 
-![Uplift vs propensity](docs/img/dashboard_uplift.png)
+![Uplift vs propensity: cumulative incremental recharges by targeting rule](docs/img/dashboard_uplift_hero.png)
 
-<details><summary>More dashboard pages</summary>
+<details><summary>More dashboard pages (screenshots)</summary>
+
+![Uplift page, full](docs/img/dashboard_uplift.png)
 
 ![Value map](docs/img/dashboard_value_map.png)
 
 ![Segments](docs/img/dashboard_segments.png)
 
+![Model health](docs/img/dashboard_model_health.png)
+
 </details>
+
+The interactive version is `outputs/dashboard.html` (also uploaded as an artifact by each CI run).
 
 ## Headline results
 
