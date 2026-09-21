@@ -22,7 +22,8 @@ from features import build_features  # noqa: E402
 from segment import load_cfg  # noqa: E402
 
 
-def load_inputs(cfg):
+def load_inputs(cfg, churn=None):
+    """`churn`: optional DataFrame (customer_id, churn_prob_30d) that replaces outputs/churn_scores.parquet."""
     out = cfg["_out"]
     seg = pd.read_parquet(out / "segment_assignments.parquet").set_index("customer_id")
     df, _ = build_features(cfg["_data"], cfg["segmentation"]["as_of"], cfg["segmentation"]["window_days"],
@@ -30,7 +31,7 @@ def load_inputs(cfg):
     df = df.join(seg[["segment_id", "persona"]], how="inner")
     clv = pd.read_parquet(out / "clv_scores.parquet").set_index("customer_id")
     upl = pd.read_parquet(out / "uplift_scores.parquet").set_index("customer_id")
-    chn = pd.read_parquet(out / "churn_scores.parquet").set_index("customer_id")
+    chn = (churn if churn is not None else pd.read_parquet(out / "churn_scores.parquet")).set_index("customer_id")
     prp = pd.read_parquet(out / "propensity_scores.parquet").set_index("customer_id")
     df = (df.join(clv[["p_alive", "clv_92d", "clv_12m", "clv_12m_if_alive"]])
             .join(upl[["uplift"]]).join(chn[["churn_prob_30d"]]).join(prp[["p_recharge500_next_month"]]))

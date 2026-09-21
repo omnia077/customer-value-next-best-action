@@ -51,7 +51,7 @@ def test_campaign_history_only_in_campaign_months():
 
 def test_ground_truth_only_read_where_allowed():
     """Ground truth may be read to validate (segment recovery, uplift evaluation) or as the churn label source."""
-    allowed = {"segment.py", "uplift.py", "churn_proxy.py"}
+    allowed = {"segment.py", "uplift.py", "churn_proxy.py", "compare_churn_sources.py"}
     for p in (ROOT / "src").glob("*.py"):
         reads = re.search(r"ground_truth", p.read_text(encoding="utf-8"))
         # docstrings in features/others may mention it; actual reads use the folder name in a path expression

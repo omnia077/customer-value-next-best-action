@@ -33,24 +33,42 @@ def churn_xy(tables, churn_date, cutoff, horizon=30):
     return X[ASOF_FEATURES], y
 
 
+def external_scores(cfg, tables):
+    """Project 1's scores, validated and keyed by customer_id. Path is relative to the repo root unless absolute."""
+    cc = cfg["churn"]
+    ext = cc.get("external_scores_path")
+    if not ext:
+        raise ValueError("churn.external_scores_path is not set")
+    ext = Path(ext) if Path(ext).is_absolute() else cfg["_root"] / ext
+    if not ext.exists():
+        raise FileNotFoundError(f"churn.external_scores_path is set but missing: {ext}")
+    from ids import msisdn_to_customer_id, standardize_external_scores
+    raw = pd.read_csv(ext) if str(ext).endswith(".csv") else pd.read_parquet(ext)
+    key = cc.get("key_column", "customer_id")
+    id_map = msisdn_to_customer_id(cfg["_data"] / "sftp_drop" / "customers.parquet") if key == "sub_hash" else None
+    pop = asof_features(*tables, cfg["segmentation"]["as_of"]).index
+    return standardize_external_scores(raw, key, cc.get("prob_column", "churn_prob_30d"), id_map, pop, cc.get("min_coverage", 0.9),
+                                       expected_cutoff=cfg["segmentation"]["as_of"])
+
+
 def run(cfg_path):
     cfg = load_cfg(cfg_path)
     cc = cfg["churn"]
     tables = load_tables(cfg["_data"])
-    ext = cc.get("external_scores_path")
-    if ext:
-        if not Path(ext).exists():
-            raise FileNotFoundError(f"churn.external_scores_path is set but missing: {ext}")
-        from ids import msisdn_to_customer_id, standardize_external_scores
-        raw = pd.read_csv(ext) if str(ext).endswith(".csv") else pd.read_parquet(ext)
-        key = cc.get("key_column", "customer_id")
-        id_map = msisdn_to_customer_id(cfg["_data"] / "sftp_drop" / "customers.parquet") if key == "sub_hash" else None
-        pop = asof_features(*tables, cfg["segmentation"]["as_of"]).index
-        std = standardize_external_scores(raw, key, cc.get("prob_column", "churn_prob_30d"), id_map, pop, cc.get("min_coverage", 0.9),
-                                          expected_cutoff=cfg["segmentation"]["as_of"])
+    if cc.get("external_scores_path"):
+        std = external_scores(cfg, tables)
         std.assign(as_of=cfg["segmentation"]["as_of"], source="project1").to_parquet(cfg["_out"] / "churn_scores.parquet", index=False)
-        print(f"using Project 1 churn scores from {ext}: {len(std):,} subscribers")
+        print(f"using Project 1 churn scores: {len(std):,} subscribers")
         return None
+    scores, met = standin_scores(cfg, tables)
+    scores.to_parquet(cfg["_out"] / "churn_scores.parquet", index=False)
+    json.dump(met, open(cfg["_out"] / "churn_proxy_metrics.json", "w"), indent=2)
+    return met
+
+
+def standin_scores(cfg, tables):
+    """Train the stand-in model; return (scores as of the config date, test metrics)."""
+    cc = cfg["churn"]
     lab = pd.read_parquet(cfg["_data"] / "ground_truth" / "churn_labels.parquet").set_index("customer_id")
     cd = pd.to_datetime(lab.churn_date, errors="coerce")
     P = dict(n_estimators=300, learning_rate=0.03, num_leaves=15, min_child_samples=50, subsample=0.8,
@@ -74,11 +92,9 @@ def run(cfg_path):
     Xall, yall = pd.concat([Xtr, Xte]), pd.concat([ytr, yte])
     fin = LGBMClassifier(**P).fit(Xall, yall)
     Xs = asof_features(*tables, cfg["segmentation"]["as_of"])[ASOF_FEATURES]
-    pd.DataFrame({"customer_id": Xs.index, "churn_prob_30d": fin.predict_proba(Xs)[:, 1],
-                  "as_of": cfg["segmentation"]["as_of"], "source": "stand-in"}).to_parquet(
-        cfg["_out"] / "churn_scores.parquet", index=False)
-    json.dump(met, open(cfg["_out"] / "churn_proxy_metrics.json", "w"), indent=2)
-    return met
+    scores = pd.DataFrame({"customer_id": Xs.index, "churn_prob_30d": fin.predict_proba(Xs)[:, 1],
+                           "as_of": cfg["segmentation"]["as_of"], "source": "stand-in"})
+    return scores, met
 
 
 if __name__ == "__main__":

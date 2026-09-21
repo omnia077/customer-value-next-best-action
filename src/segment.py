@@ -23,9 +23,19 @@ sys.path.insert(0, str(Path(__file__).parent))
 from features import SEG_FEATURES, build_features, segmentation_matrix  # noqa: E402
 
 
+def _deep_merge(base, over):
+    for k, v in over.items():
+        base[k] = _deep_merge(base.get(k, {}), v) if isinstance(v, dict) and isinstance(base.get(k), dict) else v
+    return base
+
+
 def load_cfg(cfg_path):
+    """Load the config; an optional gitignored `<name>.local.yaml` next to it overrides values (machine-specific paths)."""
     root = Path(cfg_path).resolve().parent.parent          # customer_value/
     cfg = yaml.safe_load(open(cfg_path))
+    local = Path(cfg_path).with_suffix(".local.yaml")
+    if local.exists():
+        cfg = _deep_merge(cfg, yaml.safe_load(open(local)) or {})
     cfg["_root"] = root
     cfg["_out"] = root / cfg["output_dir"]
     cfg["_out"].mkdir(exist_ok=True)

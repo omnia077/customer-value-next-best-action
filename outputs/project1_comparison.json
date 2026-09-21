@@ -1,0 +1,52 @@
+{
+  "n_common": 12332,
+  "n_churners": 237,
+  "spearman_p1_vs_standin": 0.797,
+  "project1": {
+    "roc_auc": 0.773,
+    "pr_auc": 0.068,
+    "top_decile_lift": 3.8,
+    "mean_predicted": 0.0227,
+    "observed_rate": 0.0192,
+    "calibration_ratio": 1.18
+  },
+  "standin": {
+    "roc_auc": 0.746,
+    "pr_auc": 0.047,
+    "top_decile_lift": 2.91,
+    "mean_predicted": 0.0196,
+    "observed_rate": 0.0192,
+    "calibration_ratio": 1.02
+  },
+  "auc_gap_p1_minus_standin": {
+    "mean": 0.0284,
+    "ci95": [
+      0.0103,
+      0.0521
+    ]
+  },
+  "decision_layer": [
+    {
+      "source": "stand-in",
+      "contacted": 3876,
+      "grow": 2963,
+      "protect": 221,
+      "win_back": 692,
+      "total_ev_sdg": 364736,
+      "protect_ev_sdg": 24707,
+      "protect_group_october_churn_rate_pct": 3.9,
+      "protect_group_scored_n": 206
+    },
+    {
+      "source": "project1",
+      "contacted": 3876,
+      "grow": 2865,
+      "protect": 337,
+      "win_back": 674,
+      "total_ev_sdg": 389748,
+      "protect_ev_sdg": 55192,
+      "protect_group_october_churn_rate_pct": 7.1,
+      "protect_group_scored_n": 336
+    }
+  ]
+}

@@ -19,3 +19,7 @@ venv/
 # secrets and local config
 .env
 *.salt
+
+# machine-specific config overrides (e.g. path to Project 1 scores) and external score files
+config/*.local.yaml
+data_external/
