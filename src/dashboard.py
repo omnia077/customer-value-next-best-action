@@ -257,12 +257,24 @@ def build(cfg_path):
                   + f'<p class="sub">Held in {n}/{n} seeds: propensity rank correlation negative; uplift model beats propensity; Qini gap above zero; '
                   f'top-20% uplift above the overall effect; uplift top 30% beats random; propensity top 30% loses money; BG/NBD beats last-90-day spend. '
                   f'BG/NBD beats LightGBM in only {mc["bgnbd_rmse_beats_lgbm"]}/{n} seeds. Seed 42 (main run) is a favourable draw for uplift rank correlation.</p></div>')
-    p5 = (robust + '<div class="card"><h2>How wrong can the assumed rates be? (break-even analysis)</h2>' + table(brk)
+    p1c = ""
+    if (o / "project1_comparison.json").exists():
+        c1 = json.load(open(o / "project1_comparison.json"))
+        rows = pd.DataFrame([{"metric": "ROC-AUC on actual October churn", "Project 1": c1["project1"]["roc_auc"], "stand-in": c1["standin"]["roc_auc"]},
+                             {"metric": "Top-decile lift", "Project 1": c1["project1"]["top_decile_lift"], "stand-in": c1["standin"]["top_decile_lift"]},
+                             {"metric": "Mean predicted / observed churn", "Project 1": c1["project1"]["calibration_ratio"], "stand-in": c1["standin"]["calibration_ratio"]}])
+        plan = pd.read_csv(o / "project1_actions.csv").rename(columns={"source": "churn source", "total_ev_sdg": "expected value (SDG)",
+                                                                       "protect_ev_sdg": "retention value (SDG)", "protect_group_october_churn_rate_pct": "retention group churn % (Oct)"})
+        g = c1["auc_gap_p1_minus_standin"]
+        p1c = ('<div class="card"><h2>Project 1 (real churn model) vs the stand-in, same subscribers</h2>' + table(rows) + table(plan.drop(columns=["protect_group_scored_n"]))
+               + f'<p class="sub">{c1["n_common"]:,} subscribers, {c1["n_churners"]} churned in October. AUC gap (Project 1 minus stand-in) {g["mean"]:+.3f}, 95% CI {g["ci95"][0]:.3f} to {g["ci95"][1]:.3f}. '
+               'Project 1 ranks risk better, but its probabilities still run somewhat high (mostly in the top decile), so its retention value is likely overstated. Committed results use the stand-in so they reproduce from a clone.</p></div>')
+    p5 = (robust + p1c + '<div class="card"><h2>How wrong can the assumed rates be? (break-even analysis)</h2>' + table(brk)
           + '<p class="sub">Break-even rate = the rate at which the action has zero expected value. "Robust share" = allocated subscribers still positive if the true rate is half the assumed one. Values still scale with the true rate.</p></div>'
           '<div class="card"><h2>CLV bake-off (holdout Oct-Dec)</h2>' + table(clv) + '</div>'
           '<div class="card"><h2>Propensity (test: Nov and Dec labels)</h2>'
           + table(pd.DataFrame(prop["test"]).T.reset_index().rename(columns={"index": "model"})) + '</div>'
-          '<div class="card"><h2>Churn stand-in (Project 1 scores replace this when available)</h2>' + table(pd.DataFrame([churn]).drop(columns=["note"]))
+          '<div class="card"><h2>Churn stand-in used in the committed results (comparison with Project 1 above)</h2>' + table(pd.DataFrame([churn]).drop(columns=["note"]))
           + '</div><div class="card"><h2>Drift check (PSI: &lt;0.1 OK, 0.1-0.25 WATCH, &gt;0.25 ALERT)</h2>' + table(d)
           + '<p class="sub">Score PSI compares against the baseline saved on the first run, so it is 0 until the next monthly run. tenure_days shifts every month by construction.</p></div>')
 
@@ -275,7 +287,7 @@ def build(cfg_path):
     doc = (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
            f'<title>Customer Value Map</title><style>{CSS}</style></head><body><header><h1>Customer Value Map and Next-Best-Action</h1>'
            f'<p class="sub">Prepaid subscribers, as of {cfg["segmentation"]["as_of"]}. All data is simulated; results demonstrate the method, not real-world performance.</p>'
-           f'<p class="warn">Expected values use assumed offer costs and save/win-back rates (config: actions). The churn input is a stand-in until Project 1 scores are connected.</p></header>'
+           f'<p class="warn">Expected values use assumed offer costs and save/win-back rates (config: actions). Churn risk here comes from a stand-in model; Project 1\'s real scores were compared on the same subscribers (Model health page).</p></header>'
            f'<nav role="tablist">{nav}</nav><main>{body}</main><script>{js}</script></body></html>')
     (o / "dashboard.html").write_text(doc, encoding="utf-8")
     print("wrote", o / "dashboard.html", f"({len(doc) / 1e6:.2f} MB)")

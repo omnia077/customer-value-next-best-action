@@ -70,7 +70,7 @@ Qualitative claims that held in 10/10 seeds: propensity rank correlation negativ
 - Segments are soft (silhouette 0.18). They are descriptive, not natural clusters.
 - BG/NBD independence assumption is violated by construction; campaign recharges enter the CLV fit. `p_alive` ranks correctly (84% of lines with p_alive > 0.95 recharge in the next 92 days vs 27% of lines below 0.2), but a quarter of "probably lapsed" lines still recharge, so win-back value is an upper estimate.
 - Save rate, win-back rate and offer costs are assumptions. Sensitivity: `outputs/sensitivity_assumptions.csv` (total EV ranges 311k-422k SDG across offer cost 15-40 and save rate 0.10-0.25). Break-even rates: `outputs/assumption_breakeven.csv` (retention 0.049 median vs 0.15 assumed; win-back 0.012 vs 0.06).
-- The churn input is a stand-in with simpler features than Project 1's model. A validated adapter (`src/ids.py`) swaps in Project 1's scores through config.
+- The churn input is a stand-in with simpler features than Project 1's model. Project 1's real scores were compared on the same subscribers (`docs/project1_integration.md`): AUC 0.773 vs 0.746 on October churn (gap +0.028, 95% CI 0.010 to 0.052), but its probabilities still run about 1.2x high overall and 1.7x in the top decile. A validated adapter (`src/ids.py`) swaps them in through config.
 - Prepaid only; postpaid has no recharge events.
 
 ## Fairness and privacy

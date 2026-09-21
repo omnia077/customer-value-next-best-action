@@ -147,7 +147,7 @@ def main(cfg_path):
     s = slide(prs, "Limits, and the pilot that would confirm it")
     bg_vs_gb = f"BG/NBD beats last-90-day spend in {mc['bgnbd_rmse_beats_last90']}/{mc['n_seeds']} seeds but LightGBM in only {mc['bgnbd_rmse_beats_lgbm']}/{mc['n_seeds']}." if mc else "BG/NBD roughly ties a plain ML model on holdout."
     add_text(s, 0.6, 1.5, 6, 3.4, ["Limits", "- Simulated data; uplift direction is by design.", "- Segments are soft (ARI 0.33-0.36 vs planted types).",
-                                   f"- {bg_vs_gb}", "- Churn input is a stand-in; Project 1's real scores were verified through the adapter.",
+                                   f"- {bg_vs_gb}", "- Churn input is a stand-in; Project 1's real model ranks risk better (AUC +0.03) but its probabilities run high.",
                                    "- Retention and win-back rates are assumptions (win-back is an upper estimate)."], size=15, bold_first=True)
     if mc:
         add_text(s, 0.6, 5.0, 12.1, 1.8, [f"Robustness: {mc['n_seeds']} independent simulated worlds",
