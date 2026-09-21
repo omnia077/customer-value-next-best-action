@@ -1,13 +1,14 @@
-numpy
-pandas>=2.2
-pyarrow
-scikit-learn
-scipy
-lightgbm
-duckdb
-pyyaml
-matplotlib
-python-pptx
-mlflow
-pytest
+# Versions the results in this repository were produced and tested with (Python 3.12).
+numpy==2.5.3
+pandas==3.0.6
+pyarrow==24.0.0
+scikit-learn==1.9.1
+scipy==1.18.1
+lightgbm==4.7.0
+duckdb==1.5.4
+PyYAML==6.0.1
+matplotlib==3.11.2
+python-pptx==1.0.2
+mlflow==3.16.1
+pytest==9.1.1
 # optional: apache-airflow (only to run src/customer_value_dag.py under a scheduler)

@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate simulated data (archetypes + randomized campaigns)
+        run: python data_generation/phase1b_generate_data.py --archetypes --campaign
+
+      - name: Run the monthly pipeline end to end
+        run: python src/score_monthly.py
+
+      - name: Tests
+        run: python -m pytest tests -q
+
+      - name: Build dashboard
+        run: python src/dashboard.py
+
+      # Informational only: results can differ in the last digits across operating systems and library builds.
+      - name: Compare regenerated results with the committed ones
+        run: git diff --stat -- outputs || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard
+          path: outputs/dashboard.html
