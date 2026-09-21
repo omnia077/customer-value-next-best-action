@@ -44,9 +44,10 @@ def run(cfg_path):
         from ids import msisdn_to_customer_id, standardize_external_scores
         raw = pd.read_csv(ext) if str(ext).endswith(".csv") else pd.read_parquet(ext)
         key = cc.get("key_column", "customer_id")
-        id_map = msisdn_to_customer_id(cfg["_data"] / "sftp_drop" / "customers.parquet") if key == "msisdn_hash" else None
+        id_map = msisdn_to_customer_id(cfg["_data"] / "sftp_drop" / "customers.parquet") if key == "sub_hash" else None
         pop = asof_features(*tables, cfg["segmentation"]["as_of"]).index
-        std = standardize_external_scores(raw, key, cc.get("prob_column", "churn_prob_30d"), id_map, pop, cc.get("min_coverage", 0.9))
+        std = standardize_external_scores(raw, key, cc.get("prob_column", "churn_prob_30d"), id_map, pop, cc.get("min_coverage", 0.9),
+                                          expected_cutoff=cfg["segmentation"]["as_of"])
         std.assign(as_of=cfg["segmentation"]["as_of"], source="project1").to_parquet(cfg["_out"] / "churn_scores.parquet", index=False)
         print(f"using Project 1 churn scores from {ext}: {len(std):,} subscribers")
         return None

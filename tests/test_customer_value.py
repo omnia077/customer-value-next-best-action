@@ -110,19 +110,22 @@ def test_qini_coefficient_orders_scores_correctly():
 
 def test_msisdn_hash_needs_salt_and_is_deterministic(monkeypatch):
     from ids import hash_msisdn
-    monkeypatch.delenv("MSISDN_SALT", raising=False)
+    monkeypatch.delenv("CHURN_HASH_SALT", raising=False)
     with pytest.raises(EnvironmentError):
         hash_msisdn("249912345678")
     assert hash_msisdn("249912345678", "s1") == hash_msisdn("249912345678", "s1")
     assert hash_msisdn("249912345678", "s1") != hash_msisdn("249912345678", "s2")
-    assert len(hash_msisdn("249912345678", "s1")) == 32 and "2499" not in hash_msisdn("249912345678", "s1")
+    assert len(hash_msisdn("249912345678", "s1")) == 16 and "2499" not in hash_msisdn("249912345678", "s1")
+    # documented Project 1 scheme (ml_churn/common.py hash_id): sha256(salt + msisdn) truncated to 16 hex chars
+    import hashlib
+    assert hash_msisdn("249912345678", "s1") == hashlib.sha256(b"s1249912345678").hexdigest()[:16]
 
 
 def test_msisdn_map_round_trip_and_no_raw_msisdn():
     from ids import hash_msisdn, msisdn_to_customer_id
     m = msisdn_to_customer_id(DATA / "sftp_drop" / "customers.parquet", salt="test-salt")
     assert m.index.is_unique and len(m) > 10000
-    assert (m.index.str.len() == 32).all() and not m.index.str.startswith("2499").any()   # hashes, not raw numbers
+    assert (m.index.str.len() == 16).all() and not m.index.str.startswith("2499").any()   # hashes, not raw numbers
     raw = pd.read_parquet(DATA / "sftp_drop" / "customers.parquet", columns=["customer_id", "msisdn"]).iloc[0]
     assert m[hash_msisdn(raw.msisdn, "test-salt")] == raw.customer_id
 
@@ -141,9 +144,16 @@ def test_external_churn_adapter_accepts_valid_and_rejects_bad_input():
         standardize_external_scores(good.head(50), "customer_id", "churn_prob_30d", population_ids=pop)
     with pytest.raises(ValueError, match="not found"):
         standardize_external_scores(good, "customer_id", "prob")
-    hashed = good.rename(columns={"customer_id": "msisdn_hash"}).assign(msisdn_hash=[f"h{i}" for i in range(100)])
+    hashed = good.rename(columns={"customer_id": "sub_hash"}).assign(sub_hash=[f"h{i}" for i in range(100)])
     with pytest.raises(ValueError, match="did not map"):
-        standardize_external_scores(hashed, "msisdn_hash", "churn_prob_30d", id_map=pd.Series({"h0": "C0"}))
+        standardize_external_scores(hashed, "sub_hash", "churn_prob_30d", id_map=pd.Series({"h0": "C0"}))
+    # Project 1 writes scores for one cutoff: a file from another cutoff must be rejected, the right one accepted
+    p1 = good.assign(cutoff_date=pd.Timestamp("2024-12-31"))
+    with pytest.raises(ValueError, match="expected 2024-09-30"):
+        standardize_external_scores(p1, "customer_id", "churn_prob_30d", expected_cutoff="2024-09-30")
+    ok = standardize_external_scores(p1.assign(cutoff_date=pd.Timestamp("2024-09-30")), "customer_id", "churn_prob_30d",
+                                     expected_cutoff="2024-09-30")
+    assert len(ok) == 100
 
 
 def test_uplift_learner_chosen_from_april_cv_only():
@@ -156,6 +166,19 @@ def test_uplift_learner_chosen_from_april_cv_only():
     # every learner beats the propensity ranking on true-uplift correlation
     assert (ev[ev.policy.str.startswith(("Uplift", "Alt"))].spearman_vs_true_uplift
             > ev.loc[ev.policy == "Propensity model", "spearman_vs_true_uplift"].iloc[0]).all()
+
+
+def test_multiseed_results_support_the_headline_claims():
+    """Regression guard on the committed 10-seed study: the qualitative claims must hold in every seed."""
+    import json
+    c = json.load(open(OUT / "multiseed_claims.json"))
+    n = c["n_seeds"]
+    assert n >= 10
+    for k in ("propensity_rank_corr_negative", "uplift_rank_corr_beats_propensity", "qini_gap_vs_propensity_ci_above_zero",
+              "uplift_top20_ci_above_overall_effect", "grow30_uplift_beats_random", "grow30_propensity_below_random",
+              "grow30_propensity_negative", "bgnbd_rmse_beats_last90"):
+        assert c[k] == n, f"{k} holds in only {c[k]}/{n} seeds"
+    assert c["bgnbd_rmse_beats_lgbm"] < n          # documented: BG/NBD does NOT reliably beat LightGBM
 
 
 def test_psi_detects_shift():

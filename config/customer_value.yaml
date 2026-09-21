@@ -23,8 +23,8 @@ uplift:
 
 churn:                          # stand-in until Project 1's scores exist (see src/churn_proxy.py)
   external_scores_path: null    # set to Project 1's scores (.parquet or .csv) to replace the stand-in; validated by src/ids.py
-  key_column: customer_id       # or msisdn_hash (needs env MSISDN_SALT identical to Project 1's)
-  prob_column: churn_prob_30d
+  key_column: customer_id       # Project 1's file uses sub_hash (needs env CHURN_HASH_SALT, same as Project 1)
+  prob_column: churn_prob_30d   # Project 1's file uses probability
   min_coverage: 0.9             # fail if fewer than this share of the scored population has a Project 1 score
   train_cutoffs: ["2024-02-29", "2024-03-31", "2024-04-30", "2024-05-31", "2024-06-30", "2024-07-31"]
   test_cutoffs: ["2024-08-31"]
