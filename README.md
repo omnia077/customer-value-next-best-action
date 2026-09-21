@@ -1,6 +1,6 @@
 # Customer Value Map and Next-Best-Action
 
-A data science pipeline that segments prepaid subscribers, estimates what each one is worth, finds who is persuaded by a recharge offer, and gives every subscriber one action under a budget — on a simulated telecom base with randomized campaigns, so every result can be checked against a known truth.
+A data science project that extends my telecom data-engineering work. It reuses the [billing DWH](https://github.com/omnia077/telecom-billing-dwh)'s KPI definitions and Gold-layer design, and runs on the [Telecom Churn Platform](https://github.com/omnia077/Telecom-Churn-Platform)'s simulator, whose churn model can supply the risk input. It segments prepaid subscribers, estimates what each one is worth, finds who is persuaded by a recharge offer, and gives every subscriber one action under a budget — on a simulated telecom base with randomized campaigns, so every result can be checked against a known truth.
 
 ## Business Problem
 
@@ -9,6 +9,15 @@ A recharge offer is wasted on subscribers who would have recharged anyway. Targe
 ## Objective
 
 Build an end-to-end pipeline that describes the prepaid base in a few personas, estimates customer lifetime value, measures uplift on randomized campaigns, and allocates one action per subscriber — recharge bonus, retention offer, win-back or nothing — within a contact budget. Every model is validated on a time-based holdout or against the simulator's ground truth, and every headline result is repeated across 10 independent simulated worlds.
+
+## Built On
+
+This project sits downstream of two of my data-engineering projects:
+
+- **[Telecom Churn Platform](https://github.com/omnia077/Telecom-Churn-Platform)** — the source of the simulator (extended here with planted customer types and randomized campaigns), the salted-hash subscriber IDs, and the churn model. Committed results use a simple stand-in for its scores; the real model is compared in `docs/project1_integration.md`
+- **[Telecom Billing DWH](https://github.com/omnia077/telecom-billing-dwh)** — the source of the KPI definitions (ARPU, MOU) mirrored in the persona mart, and the Gold-layer star-schema pattern. `dim_segment` and `fact_customer_value` are shaped to load into its Gold layer
+
+No data flows from the billing DWH: it holds a different population and no recharge events.
 
 ## Data Sources
 
