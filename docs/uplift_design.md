@@ -32,7 +32,7 @@ Five learners on the same LightGBM base: T-learner, regularised T-learner, S-lea
 | Propensity model | | -0.62 | 2.1 | -0.0054 (-0.0076, -0.0035) |
 | Oracle | | +1.00 | 17.6 | 0.0077 (0.0054, 0.0103) |
 
-The S-learner's April CV lead over the regularised T-learner is within one standard deviation: treat the two as equivalent. Every learner beats propensity targeting. Uplift minus propensity Qini (paired bootstrap): 0.0111 (95% CI 0.0071, 0.0143).
+The S-learner's April CV lead over the regularised T-learner is within one standard deviation: treat the two as equivalent. Every learner beats propensity targeting. **These numbers are for one simulated world (seed 42), which is a favourable draw.** Across seeds 1-10 the CV-selected learner's rank correlation with the true effect is +0.56 on average (0.50 to 0.65), a fixed T-learner +0.39, propensity -0.62; the selected learner was the S-learner in 6 seeds, the regularised T-learner in 3, the X-learner in 1 (see `docs/model_card_customer_value.md`). Uplift minus propensity Qini (paired bootstrap): 0.0111 (95% CI 0.0071, 0.0143).
 
 Calibration of the selected model on June (quintile means, points): predicted -0.1 / 2.8 / 6.0 / 8.7 / 14.1, true 1.9 / 5.1 / 7.9 / 9.3 / 13.3, observed 1.7 / 5.7 / 8.3 / 10.4 / 14.1.
 

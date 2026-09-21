@@ -28,7 +28,7 @@ CLV holdout (n = 13,800; actual spend 18.5M SDG):
 | LightGBM on RFM | 0.99 | 2,113 | 65.3% |
 | Oracle | 1.00 | 0 | 76.4% |
 
-BG/NBD over-predicts the top decile (7,315 vs 6,240 SDG actual). Gamma-Gamma fit has q = 0.90 (<1), i.e. a heavy-tailed spend distribution across customers.
+Across 10 independent simulated worlds BG/NBD beats last-90-day spend in 10/10 (mean RMSE 1,961 vs 2,181, about 10% lower) but beats LightGBM in only 2/10 (1,961 vs 1,939, about 1% worse): it is a defensible classic model, not a winner. BG/NBD over-predicts the top decile (7,315 vs 6,240 SDG actual). Gamma-Gamma fit has q = 0.90 (<1), i.e. a heavy-tailed spend distribution across customers.
 
 Propensity (test, n = 24,141, base rate 24.1%): logistic ROC-AUC 0.859 / PR-AUC 0.657; LightGBM 0.870 / 0.672, top-decile lift 3.17, Brier 0.121. Isotonic calibration did not improve Brier (0.1216), so raw LightGBM scores are used.
 
@@ -44,6 +44,25 @@ Uplift (June, n = 13,482, randomized; average effect observed +8.2 pts, true +7.
 Other learners (T, regularised T, X, class transformation) are in `docs/uplift_design.md`; all beat propensity. Grow policy net value on June (true uplift, 25 SDG offer): uplift top 30% = 207k SDG, random 89k, propensity -24k, oracle 294k; uplift EV>0 rule 317k vs contact-everyone 296k. Uplift targeting beats contact-everyone from an offer cost of 19 SDG.
 
 Expected value of the current action plan (365k SDG): 166k recharge bonus (validated against truth), 25k retention and 174k win-back (assumption-based, 54% of total).
+
+## Robustness across simulator seeds
+`src/multiseed.py` re-simulates the world with seeds 1-10 and reruns segmentation, CLV and uplift with the same settings (`outputs/multiseed_summary.csv`, `multiseed_per_seed.csv`, `multiseed_claims.json`; guarded by a test).
+
+| Metric | Mean (sd) | Range | Seed 42 |
+|---|---|---|---|
+| Uplift rank correlation with true effect | +0.56 (0.06) | 0.50 to 0.65 | +0.67 |
+| Propensity rank correlation | -0.62 (0.01) | -0.64 to -0.60 | -0.62 |
+| Fixed T-learner rank correlation | +0.39 (0.04) | 0.33 to 0.44 | +0.47 |
+| Qini gap uplift - propensity, lower 95% bound | 0.0055 (0.0020) | 0.0016 to 0.0079 | 0.0071 |
+| Uplift top-20% observed uplift (pts) | 13.2 (1.5) | 10.5 to 15.5 | 14.1 |
+| Grow net value, uplift top 30% (SDG) | 191.7k (8.7k) | 177.6k to 206.9k | 207.2k |
+| Grow net value, propensity top 30% (SDG) | -22.7k (2.4k) | -27.5k to -19.3k | -24.3k |
+| Grow net value, random 30% (SDG) | 88.1k (0.9k) | 86.1k to 89.2k | 88.7k |
+| Uplift EV rule minus contact-everyone at 25 SDG | +14.4k (+4.9%) | +0.4k to +32.0k | +21.5k |
+| Break-even offer cost (SDG) | 19.7 (4.7) | 12 to 25 | 19 |
+| Segment recovery ARI | 0.348 (0.008) | 0.333 to 0.361 | 0.328 |
+
+Qualitative claims that held in 10/10 seeds: propensity rank correlation negative; uplift beats propensity; Qini gap above zero; top-20% uplift interval above the overall effect; uplift top 30% beats random; propensity top 30% loses money; uplift EV rule beats contacting everyone at 25 SDG (narrowly in the worst seed). **Seed 42 is above the range for uplift rank correlation**, so quote the 10-seed mean. Selected learner: S-learner 6, regularised T-learner 3, X-learner 1. Propensity, the churn stand-in and the allocation step are not repeated per seed.
 
 ## Limitations
 - Simulated data; mechanisms are known to the author. The uplift effect exists only for people who would not otherwise buy, so propensity-negative correlation is built in.

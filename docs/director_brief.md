@@ -8,9 +8,12 @@
 3. **Run the next campaign with a randomized 10% holdout** so the model is re-estimated on real results and the win-back and retention rates are measured, not assumed.
 
 ## What we found
-- **Four personas.** Core high-value data-led: 26% of subscribers, 54% of revenue, lowest uplift (they recharge anyway). Steady voice-led: 34% / 30%. Lapsing data-led: 23% / 11%, highest win-back value. Light mixed-use: 17% / 5%, cheapest to serve.
+- **Four personas.** Core high-value data-led: 26% of subscribers, 54% of revenue, highest propensity but below-average uplift (6.3 points, second lowest: they mostly recharge anyway). Steady voice-led: 34% / 30%, lowest uplift (5.2 points). Lapsing data-led: 23% / 11%, highest win-back value. Light mixed-use: 17% / 5%, cheapest to serve.
 - **Propensity is not persuasion.** Rank correlation with the true effect of the offer: uplift model +0.67, propensity model -0.62. In the top 20% by uplift, the offer added 14.1 points to the recharge rate (interval 11.9 to 16.5) against 8.2 points for everyone.
 - **Targeting pays once the offer costs more than about 19 SDG per contact.** At the assumed 25 SDG it beats contacting everyone (317k vs 296k SDG). At 50 SDG, contacting everyone loses 41k SDG while targeting still earns 109k SDG.
+
+- **The result is not a lucky draw.** The simulation was repeated in 10 independent worlds. In all 10, propensity targeting lost money (average -23k SDG at a 30% budget) and uplift targeting beat random (average +192k vs +88k SDG). The rank correlation with the true effect averaged +0.56 for the uplift model (range +0.50 to +0.65); the +0.67 quoted above is the most favourable of the runs.
+- **The edge over contacting everyone is small at 25 SDG** (about 5% on average) and grows quickly with offer cost, so confirm the real cost per contact before relying on it.
 
 ## Chart to show
 Uplift vs propensity (dashboard page "Uplift vs propensity"): cumulative incremental recharges as more subscribers are contacted. The propensity line sits below random.
