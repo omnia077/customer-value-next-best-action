@@ -1,0 +1,52 @@
+data_root: data_v2                # relative to the repo root; produced by data_generation/phase1b_generate_data.py --archetypes --campaign
+output_dir: outputs
+
+seed: 42
+
+clv:
+  cal_end: "2024-09-30"         # fit BG/NBD + Gamma-Gamma on 2024-01-01..cal_end
+  holdout_end: "2024-12-31"     # validate on the following 92 days
+  penalizer: 0.001
+  ml_window_days: 180
+
+propensity:                     # label = recharge >= 500 SDG in the next calendar month
+  train_cutoffs: ["2024-02-29", "2024-07-31", "2024-08-31"]   # label months Mar, Aug, Sep (no campaign months)
+  val_cutoffs: ["2024-09-30"]                                   # label month Oct
+  test_cutoffs: ["2024-10-31", "2024-11-30"]                    # label months Nov, Dec
+
+uplift:
+  train_campaign: 1             # April
+  test_campaign: 2              # June
+  horizon_days: 30              # outcome window [send, send+29]
+  contact_frac: 0.20            # share of eligible subscribers contacted in the policy comparison
+  n_bootstrap: 200
+
+churn:                          # stand-in until Project 1's scores exist (see src/churn_proxy.py)
+  external_scores_path: null    # set to Project 1's scores (.parquet or .csv) to replace the stand-in; validated by src/ids.py
+  key_column: customer_id       # or msisdn_hash (needs env MSISDN_SALT identical to Project 1's)
+  prob_column: churn_prob_30d
+  min_coverage: 0.9             # fail if fewer than this share of the scored population has a Project 1 score
+  train_cutoffs: ["2024-02-29", "2024-03-31", "2024-04-30", "2024-05-31", "2024-06-30", "2024-07-31"]
+  test_cutoffs: ["2024-08-31"]
+
+actions:                        # ALL of these are assumptions, not estimates. Change and re-run to see sensitivity.
+  avg_added_recharge_sdg: 625   # a converter's recharge: 75% x 500 + 25% x 1000
+  offer_cost_sdg: 25            # expected cost per recharge-bonus contact (contact + bonus paid)
+  save_rate: 0.15               # share of at-risk value saved by a retention offer
+  retention_cost_sdg: 40
+  winback_rate: 0.06
+  winback_cost_sdg: 30
+  winback_min_recency_days: 45
+  max_contact_share: 0.30       # budget: at most this share of the base receives any action (one action per subscriber)
+  clv_top_share: 0.30           # matrix cut-offs (descriptive quadrant labels)
+  risk_top_share: 0.10
+
+segmentation:
+  as_of: "2024-09-30"
+  window_days: 180
+  active_within_days: 90        # population rule: recharge or usage in the last N days (sensitivity run compares with no rule)
+  k_range: [3, 4, 5, 6, 7, 8]
+  k_final: 4                    # updated after the k selection run
+  n_bootstrap: 20
+  silhouette_sample: 6000
+  seed: 42

@@ -1,0 +1,21 @@
+# generated data (~150 MB): recreate with data_generation/phase1b_generate_data.py
+data_v2/
+
+# generated tables (subscriber-level scores) and run state
+outputs/*.parquet
+outputs/mart/*.parquet
+outputs/qini_slide.png
+mlflow.db
+mlartifacts/
+mlruns/
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# secrets and local config
+.env
+*.salt

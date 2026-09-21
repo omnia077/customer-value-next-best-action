@@ -1,0 +1,13 @@
+numpy
+pandas>=2.2
+pyarrow
+scikit-learn
+scipy
+lightgbm
+duckdb
+pyyaml
+matplotlib
+python-pptx
+mlflow
+pytest
+# optional: apache-airflow (only to run src/customer_value_dag.py under a scheduler)
