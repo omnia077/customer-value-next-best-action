@@ -3,6 +3,7 @@
 | Document | What it is |
 |---|---|
 | [model_card_customer_value.md](model_card_customer_value.md) | Intended use, models, metrics, robustness across 10 seeds, limitations, fairness, monitoring |
+| [design_decisions.md](design_decisions.md) | Why the project is built this way, deviations from the original spec, governance |
 | [uplift_design.md](uplift_design.md) | The simulated randomized campaigns, checks, learner selection, calibration |
 | [project1_integration.md](project1_integration.md) | How Project 1's real churn scores were connected and what they change |
 | [bi_data_requirements.md](bi_data_requirements.md) | Tables, grain, KPI definitions and security for a BI tool |

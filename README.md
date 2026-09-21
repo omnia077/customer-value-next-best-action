@@ -1,125 +1,173 @@
 # Customer Value Map and Next-Best-Action
 
-For each prepaid subscriber: **who they are** (persona), **what they are worth** (CLV), **who is persuaded by an offer** (uplift) and **what to do** (one action under a budget).
+A data science pipeline that segments prepaid subscribers, estimates what each one is worth, finds who is persuaded by a recharge offer, and gives every subscriber one action under a budget — on a simulated telecom base with randomized campaigns, so every result can be checked against a known truth.
 
-> A propensity model tells you who will buy. An uplift model tells you who buys *because of the offer*. On the simulated randomized campaign, targeting by propensity did worse than random in every one of 10 independent simulated worlds.
+## Business Problem
 
-**All data is simulated** (`data_generation/phase1b_generate_data.py --archetypes --campaign`, 20,000 customers). Results demonstrate the method, not real-world performance.
+A recharge offer is wasted on subscribers who would have recharged anyway. Targeting by *who is likely to buy* (propensity) picks exactly those "sure things". The money is in targeting *who buys because of the offer* (uplift), and in spending each contact where its expected value is highest.
 
-![Uplift vs propensity: cumulative incremental recharges by targeting rule](docs/img/dashboard_uplift_hero.png)
+## Objective
 
-<details><summary>More dashboard pages (screenshots)</summary>
+Build an end-to-end pipeline that describes the prepaid base in a few personas, estimates customer lifetime value, measures uplift on randomized campaigns, and allocates one action per subscriber — recharge bonus, retention offer, win-back or nothing — within a contact budget. Every model is validated on a time-based holdout or against the simulator's ground truth, and every headline result is repeated across 10 independent simulated worlds.
 
-![Uplift page, full](docs/img/dashboard_uplift.png)
+## Data Sources
 
-![Value map](docs/img/dashboard_value_map.png)
+All data is simulated by `data_generation/phase1b_generate_data.py` (20,000 customers, 72% prepaid, 2024):
 
-![Segments](docs/img/dashboard_segments.png)
+- **customers** — `customer_id`, `msisdn`, `region`, `plan_type`, `age`, `gender`, `activation_date`, `monthly_arpu_sdg`
+- **recharge_records** — `customer_id`, `recharge_date`, `amount_sdg`, `channel` (~206k rows)
+- **usage_events** — `customer_id`, `event_date`, `usage_type` (data, voice, sms), `usage_value` (~1.3M rows)
+- **campaign_history** — two randomized "recharge bonus" offers (April, June): `campaign_id`, `customer_id`, `sent_date`, `treated`
+- **ground_truth** — planted customer types, true individual uplift, churn dates. Used only to validate, never as a feature
 
-![Model health](docs/img/dashboard_model_health.png)
+## 🏗️ Data Architecture
 
-</details>
+<img src="docs/img/architecture.svg" alt="Architecture Diagram" width="100%">
 
-The interactive version is `outputs/dashboard.html` (also uploaded as an artifact by each CI run).
+Simulated tables pass through **point-in-time features** (only events up to the as-of date, enforced by a test) into five models: segmentation, CLV, propensity, uplift and churn risk. The **decision layer** turns their outputs into one action per subscriber, ranked by expected net value under a contact budget. Results land in a persona KPI mart (DuckDB), a dashboard, a deck and briefs in English and Arabic. Ground truth only checks the results.
 
-## Headline results
+## 📐 Decision Layer — One Action per Subscriber
 
-The main run uses simulator seed 42. **Seed 42 is a favourable draw for uplift**, so quote the 10-seed column (`src/multiseed.py`: seeds 1-10, each a freshly simulated world, same code and settings).
-
-| Result | Main run (seed 42) | 10 simulated worlds: mean (range) |
+| Action | Expected net value (SDG) | Validated against truth? |
 |---|---|---|
-| Uplift model rank correlation with the true effect (S/T/X-learner chosen on April CV) | **+0.67** | **+0.56** (0.50 to 0.65) |
-| Propensity model rank correlation with the true effect | **-0.62** | **-0.62** (-0.64 to -0.60) |
-| Qini gap, uplift minus propensity: lower 95% bound | +0.0071 | +0.0055 (0.0016 to 0.0079): above zero in 10/10 |
-| Observed uplift in the top 20% (pts), overall effect in brackets | 14.1 (8.2) | 13.2 (7.8): interval above the overall effect in 10/10 |
-| Grow policy, 30% budget: uplift / random / propensity (SDG, true uplift) | 207k / 89k / **-24k** | 192k / 88k / **-23k**; propensity negative in 10/10 |
-| Uplift EV rule vs contacting everyone at a 25 SDG offer (SDG) | 317k vs 296k | 308k vs 294k: **+4.9% on average, +0.4k in the worst seed** |
-| Offer cost above which the uplift rule beats contacting everyone | 19 SDG | 19.7 SDG (12 to 25) |
-| CLV holdout RMSE: BG/NBD / last-90-day spend / LightGBM (SDG) | 2,106 / 2,412 / 2,113 | 1,961 / 2,181 / 1,939 |
-| Segments: recovery of planted archetypes (ARI), silhouette | 0.33, 0.18 | 0.35 (0.33 to 0.36), 0.18 |
+| **Grow** — recharge bonus | uplift × average added recharge − offer cost | Yes |
+| **Protect** — retention offer | churn probability × save rate × value if alive − cost | No, save rate is assumed |
+| **Win back** — lapsed lines | win-back rate × (1 − p_alive) × value if alive − cost | No, win-back rate is assumed |
+| **Maintain** | 0 | — |
 
-Single-run results (not repeated across seeds): propensity (Nov, Dec) ROC-AUC 0.870, PR-AUC 0.672, top-decile lift 3.2x, well calibrated. Population 12,921 active prepaid subscribers as of 30 Sep 2024. Action plan: 3,876 subscribers (30%) get one action (2,963 recharge bonus, 692 win-back, 221 retention); expected net value 365k SDG, of which **166k (46%) is validated against simulator truth** and 199k rests on assumed rates.
+Each subscriber gets the best action with positive value; the top 30% by value are contacted. All cost and rate assumptions live in `config/customer_value.yaml`.
 
-## Caveats (read before quoting any number)
+## Key Design Decisions
 
-- **Uplift direction is by design.** The simulated offer converts only people who would not otherwise have recharged 500+ SDG. The method and its evaluation against known truth are the demonstration, not the effect size.
-- **BG/NBD wins against the simple baseline, not against ML.** It beats last-90-day spend in 10/10 seeds (about 10% lower RMSE) but beats LightGBM in only 2/10 (about 1% worse on average). Present it as a bake-off, not a win.
-- **Learner choice is not fixed.** April cross-validation picked the S-learner in 6 seeds, the regularised T-learner in 3 and the X-learner in 1. The CV-selected learner beats a fixed T-learner in 10/10 seeds.
-- **The 25 SDG edge over contacting everyone is small.** Targeting pays clearly from about 50 SDG per contact (at 50 SDG, contacting everyone loses 41k in the main run while the uplift rule earns 109k) or under a budget (`outputs/grow_sweep_offer_cost.csv`, `grow_sweep_budget.csv`).
-- **54% of expected value rests on assumed rates** (win-back 174k, retention 25k). Break-even analysis (`outputs/assumption_breakeven.csv`): both actions stay positive for 93% and 100% of allocated subscribers if the true rate is half the assumed one, but value scales down. `p_alive` ranks lapse risk correctly (84% of "alive" lines recharge in the next 92 days vs 27% of "probably lapsed"), yet that 27% means win-back value is an upper estimate until a pilot measures it.
-- **Churn input.** Committed results use a stand-in (`src/churn_proxy.py`) so they reproduce from a clone. Project 1 was re-run on this dataset with the real salt and compared on the same subscribers: it ranks risk better (AUC 0.773 vs 0.746; gap +0.028, 95% CI 0.010 to 0.052) and its retention group churns more (7.1% vs 3.9% in October), but its probabilities still run somewhat high (1.18x overall after its switch to Platt calibration, 1.7x in the top decile), so its retention value (55k SDG) is probably overstated. Details, runbook and numbers: [docs/project1_integration.md](docs/project1_integration.md).
-- BG/NBD assumes purchase rate and dropout are independent; the simulator ties both to one hidden state, so that is violated by design. Campaign-induced recharges (April, June) are in the CLV fit window.
-- **Billing DWH is reused for KPI definitions only** (ARPU, MOU mirrored in DuckDB). It holds a different population and no recharge events; regenerating it with shared customers was considered and not recommended.
-- The Arabic brief was reviewed by a native reader (no changes requested). Terminology reference: [docs/glossary_ar.md](docs/glossary_ar.md).
-- **CI is written but has not run on GitHub yet.** `.github/workflows/ci.yml` regenerates the data, runs the pipeline and the tests.
+- **Uplift over propensity** — a propensity model ranks "sure things" first. On the randomized campaign its ranking correlates *negatively* with the true effect of the offer.
+- **Learner chosen on April only** — five uplift learners are compared by cross-validation on the April campaign; June is the untouched test.
+- **Point-in-time features** — every feature is computed as of a cutoff date, and a test deletes all later events and checks nothing changes.
+- **BG/NBD for lifetime value** — prepaid lines have no cancellation event, so dropout is inferred. It is benchmarked against a simple baseline and a LightGBM model, not assumed to win.
+- **Ground truth for validation only** — a test restricts which modules may read it.
+- **Robustness before claims** — the study is repeated on 10 freshly simulated worlds; seed 42 turned out to be a favourable draw, so headline numbers use the 10-world mean.
+- **Assumptions in one place** — offer cost, save rate and win-back rate are labelled assumptions with break-even and sensitivity analysis.
 
-## Run it
+Full rationale in `docs/design_decisions.md`.
+
+## What It Found
+
+Comparisons between targeting rules are averages over 10 simulated worlds at a 30% contact budget. Persona, action-plan and Project 1 figures come from the main run (seed 42):
+
+- **Propensity targeting lost money in every world** — −23k SDG, against +192k for uplift targeting and +88k for random
+- **Uplift ranks subscribers correctly** — rank correlation with the true effect +0.56 (0.50 to 0.65); propensity −0.62
+- **The largest group by revenue is mostly sure things** — core high-value subscribers are 26% of the base and 54% of revenue, with the highest propensity and below-average uplift
+- **BG/NBD beats last-90-day spend but not ML** — RMSE 1,961 vs 2,181 SDG (10% lower), and 1,939 for LightGBM
+- **Targeting beats contacting everyone from about 20 SDG per contact** (range 12 to 25); at the assumed 25 SDG the edge is small, +5% on average
+- **Action plan** — 3,876 of 12,921 active subscribers get one action, worth about 365k SDG, of which 166k is validated against truth
+- **Project 1's real churn model** ranks risk better than the stand-in (AUC 0.773 vs 0.746) and its retention group churns 7.1% vs 3.9%
+
+<img src="docs/img/dashboard_uplift_hero.png" alt="Uplift vs propensity targeting" width="85%">
+
+## ⚠️ Limitations
+
+- **All data is simulated.** Results demonstrate the method, not real-world performance. The uplift direction is built into the simulator.
+- **About half the expected value rests on assumed rates** (win-back and retention). They stay positive even if the true rates are half as large, but a pilot must measure them.
+- **Committed results use a stand-in churn model** so they reproduce from a clone. Project 1's real scores are compared separately (`docs/project1_integration.md`).
+- **The Airflow DAG has not been executed** and the GitHub Actions workflow has not run yet.
+
+## Platform Components
+
+- **pandas + pyarrow** — feature building over Parquet
+- **scikit-learn + LightGBM** — k-means, propensity, uplift learners
+- **scipy** — own BG/NBD and Gamma-Gamma implementation (`lifetimes` is unmaintained)
+- **DuckDB** — persona KPI mart, using the billing DWH's ARPU and MOU definitions
+- **MLflow** — run tracking (sqlite backend)
+- **Airflow DAG** — `customer_value_monthly`, waits for the churn DAG (written, not executed)
+- **pytest + GitHub Actions** — 17 tests; CI regenerates the data and reruns everything
+
+## 🚀 Quick Start
 
 ```bash
-pip install -r requirements.txt                                            # tested versions pinned
-python data_generation/phase1b_generate_data.py --archetypes --campaign    # writes data_v2/ (gitignored, ~150 MB)
-python src/score_monthly.py                                                # whole pipeline; name steps to run a subset
-python src/dashboard.py                                                    # outputs/dashboard.html (deep links: #t0 ... #t4)
-python src/build_deck.py                                                   # docs/customer_value_deck.pptx
-python -m pytest tests -q                                                  # 17 tests
-python src/multiseed.py --seeds 1-10 --workdir /tmp/seeds                  # robustness study, about 15 minutes
-# needs Project 1 scored on this data and CHURN_HASH_SALT (see docs/project1_integration.md):
-python src/compare_churn_sources.py --scores data_external/churn_scores_project1.parquet --key sub_hash --prob probability
+# 1 — Install dependencies
+pip install -r requirements.txt
+
+# 2 — Generate the simulated data (~150 MB, not committed)
+python data_generation/phase1b_generate_data.py --archetypes --campaign
+
+# 3 — Run the full pipeline (a few minutes)
+python src/score_monthly.py
+
+# 4 — Build the dashboard and run the tests
+python src/dashboard.py            # outputs/dashboard.html
+python -m pytest tests -q
+
+# Optional — robustness study on 10 simulated worlds (about 15 minutes)
+python src/multiseed.py --seeds 1-10 --workdir /tmp/seeds
 ```
 
-Individual stages: `python src/segment.py [--select]`, `clv.py`, `propensity.py`, `uplift.py`, `churn_proxy.py`, `actions.py`, `persona_kpis.py`.
+## 📂 Repository Structure
 
-## CRISP-DM map
+```
+customer-value-next-best-action/
+│
+├── config/
+│   └── customer_value.yaml          # Windows, cut-offs, seeds, every cost/rate assumption
+│
+├── data_generation/
+│   └── phase1b_generate_data.py     # Simulator: archetypes + randomized campaigns
+│
+├── src/
+│   ├── features.py                  # Point-in-time features
+│   ├── segment.py                   # k-means personas + recovery check vs planted types
+│   ├── clv.py                       # BG/NBD + Gamma-Gamma vs baselines
+│   ├── propensity.py                # Recharge >= 500 SDG next month
+│   ├── uplift.py                    # 5 learners, April CV selection, June test vs truth
+│   ├── churn_proxy.py               # Stand-in churn scores + Project 1 adapter
+│   ├── ids.py                       # MSISDN hashing, Project 1 score validation
+│   ├── actions.py                   # One action per subscriber under a budget
+│   ├── persona_kpis.py              # DuckDB: ARPU, MOU by persona
+│   ├── score_monthly.py             # Whole pipeline: validate → models → actions → drift → MLflow
+│   ├── customer_value_dag.py        # Airflow DAG (same steps)
+│   ├── multiseed.py                 # 10-world robustness study
+│   ├── compare_churn_sources.py     # Stand-in vs Project 1's real scores
+│   ├── dashboard.py                 # Single-file HTML dashboard
+│   └── build_deck.py                # 5-slide deck
+│
+├── tests/
+│   └── test_customer_value.py       # 17 tests
+│
+├── outputs/                         # Results (CSV, JSON, dashboard) — see outputs/README.md
+│
+├── docs/
+│   ├── model_card_customer_value.md
+│   ├── design_decisions.md
+│   ├── uplift_design.md
+│   ├── project1_integration.md
+│   ├── bi_data_requirements.md
+│   ├── director_brief.md            # English
+│   ├── director_brief_ar.md         # Arabic
+│   ├── glossary_ar.md
+│   ├── customer_value_deck.pptx
+│   └── img/                         # Architecture diagram, dashboard screenshots
+│
+├── .github/workflows/ci.yml
+├── requirements.txt
+├── LICENSE
+├── .gitignore
+└── README.md
+```
 
-| Phase | Where |
-|---|---|
-| Business understanding | This README; `docs/director_brief.md` (EN) / `docs/director_brief_ar.md` (AR) |
-| Data understanding | `docs/uplift_design.md` (randomization checks); `src/features.py` |
-| Data preparation | `src/features.py`: point-in-time features (a test proves no future data) |
-| Modelling | `src/segment.py`, `clv.py`, `propensity.py`, `uplift.py`, `churn_proxy.py`, `actions.py` |
-| Evaluation | `outputs/*.csv|json`; checks against simulator truth in `segment.py`, `uplift.py`, `actions.py`; robustness in `multiseed.py` |
-| Deployment | `src/score_monthly.py`, `src/customer_value_dag.py`, `src/persona_kpis.py`, `outputs/dashboard.html`, MLflow (`mlflow.db`, gitignored), CI |
+## 📋 Requirements
 
-## Pipeline and outputs
+- Python 3.12+
+- No Java needed (no Spark in this project)
+- Tested package versions pinned in `requirements.txt`
+- About 150 MB of disk for the generated data
 
-`validate inputs -> segment -> CLV -> propensity -> uplift -> churn scores -> actions -> persona KPIs -> drift check -> MLflow`
+## 📚 Documentation
 
-Tables in `outputs/` (Parquet, gitignored, regenerated by the pipeline): `segment_assignments`, `clv_scores`, `propensity_scores`, `uplift_scores`, `churn_scores`, `customer_actions`; `outputs/mart/`: `persona_kpis_monthly`, `dim_segment`, `fact_customer_value`. Results as CSV/JSON, the multi-seed study and the dashboard are committed.
-
-## Decisions and deviations from the working spec
-
-| Item | What was done | Why |
-|---|---|---|
-| k | 4 (k=3 was more stable: ARI 0.95 vs 0.89) | k=4 separates a very low-value group (4.8% of revenue) from a lapsing data-led group (10.7%), which need different actions. k was **not** chosen on the recovery score |
-| GMM | Tried in an early run (BIC unreliable for k>=6); not in the final module | Adds nothing over k-means here |
-| Population | Active in last 90 days | Sensitivity run: without the rule 11% of lines had already churned and skewed two segments; conclusions otherwise similar (`outputs/k_selection_*.csv`) |
-| CLV library | Own BG/NBD + Gamma-Gamma (`src/clv.py`) | `lifetimes` is unmaintained and fragile with pandas 3. Formula checked against Monte Carlo (92-day expectation 6.086 vs 6.086); fitted a=0.07 (<1) is valid |
-| Uplift learners | 5 compared, chosen by April cross-validation | A fixed T-learner had rank correlation +0.47 (seed 42) / +0.39 (10-seed mean); the CV-selected learner +0.67 / +0.56. June was never used to choose |
-| Propensity features | Segment ID **not** used | Segments are fit as of 30 Sep; using them at earlier cutoffs would leak the future |
-| Churn | Committed results use the stand-in; Project 1 re-run on the shared data and compared (`compare_churn_sources.py`) | Real scores need the salt and cannot be regenerated by CI |
-| Win-back value | Weighted by (1 - p_alive) | First version priced every lapsed line as truly gone and over-allocated budget |
-| Airflow | DAG written, **not executed** | Airflow not installed here; the same steps are run and tested through `score_monthly.py` |
-| Model registry | Not used; metrics and artifacts logged to MLflow (sqlite) | Scores are produced by the run that trains the models |
-| Billing DWH | KPI definitions mirrored; `dim_segment` / `fact_customer_value` ready for its Gold layer | Different population, see caveats |
-| ID hashing | `customer_id` everywhere; hashing helper matches Project 1's scheme | No MSISDN reaches any output |
+- [Model Card — models, metrics, robustness across seeds, limitations](docs/model_card_customer_value.md)
+- [Design Decisions — why it is built this way](docs/design_decisions.md)
+- [Uplift Design — campaigns, checks, learner selection](docs/uplift_design.md)
+- [Connecting Project 1's Churn Scores](docs/project1_integration.md)
+- [BI Data Requirements](docs/bi_data_requirements.md)
+- [Director Brief (English)](docs/director_brief.md) · [Arabic](docs/director_brief_ar.md)
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The data is simulated; no real subscriber data is included.
-
-## Governance
-
-Segments and CLV are commercially sensitive: restrict by role. `age`, `gender`, region and MSISDN are not model inputs; `outputs/fairness_audit.csv` shows contact rates by age band (27.2-31.5%) and region (27.7-33.0%). One action per subscriber per period (`test_actions_one_per_subscriber_and_budget`). Document retention and permitted use of campaign data before real use.
-
-## Repository layout
-
-```
-config/customer_value.yaml      windows, cut-offs, seeds, assumptions (all cost/rate assumptions live here)
-data_generation/                simulator (archetypes + randomized campaigns)
-src/                            features, segment, clv, propensity, uplift, churn_proxy, actions, ids, persona_kpis,
-                                score_monthly, customer_value_dag, multiseed, dashboard, build_deck
-tests/                          17 tests (point-in-time safety, ground-truth access, allocation, adapters, seed robustness)
-docs/                           model card, uplift design, Project 1 integration, BI requirements, briefs (EN/AR), glossary, deck, img/
-outputs/                        results (CSV/JSON/dashboard committed; Parquet tables regenerated)
-.github/workflows/ci.yml        regenerate data, run pipeline and tests
-```
+MIT — see [LICENSE](LICENSE).
