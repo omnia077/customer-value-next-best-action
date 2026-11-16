@@ -168,15 +168,6 @@ customer-value-next-best-action/
 - Tested package versions pinned in `requirements.txt`
 - About 150 MB of disk for the generated data
 
-## 📚 Documentation
-
-- [Model Card — models, metrics, robustness across seeds, limitations](docs/model_card_customer_value.md)
-- [Design Decisions — why it is built this way](docs/design_decisions.md)
-- [Uplift Design — campaigns, checks, learner selection](docs/uplift_design.md)
-- [Connecting Project 1's Churn Scores](docs/project1_integration.md)
-- [BI Data Requirements](docs/bi_data_requirements.md)
-- [Director Brief (English)](docs/director_brief.md) · [Arabic](docs/director_brief_ar.md)
-
 ## License
 
 MIT — see [LICENSE](LICENSE).
