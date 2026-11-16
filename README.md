@@ -56,7 +56,7 @@ Each subscriber gets the best action with positive value; the top 30% by value a
 - **Robustness before claims** — the study is repeated on 10 freshly simulated worlds; seed 42 turned out to be a favourable draw, so headline numbers use the 10-world mean.
 - **Assumptions in one place** — offer cost, save rate and win-back rate are labelled assumptions with break-even and sensitivity analysis.
 
-Full rationale in `docs/design_decisions.md`.
+
 
 ## What It Found
 
